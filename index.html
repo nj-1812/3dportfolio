@@ -70,6 +70,26 @@
       font-weight: 600;
     }
 
+    /* Skills tags glow like badges and sit in a wrap layout */
+    .skills-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .skill-tag {
+      display: inline-block;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(59, 130, 246, 0.14);
+      border: 1px solid rgba(125, 211, 252, 0.8);
+      color: #e0f2fe;
+      box-shadow: 0 0 16px rgba(125, 211, 252, 0.5);
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+
     .hint {
       position: fixed;
       bottom: 16px;
@@ -103,6 +123,20 @@
     </div>
   </section>
 
+  <!-- New Skills section with glowing tag chips for the technologies I use -->
+  <section id="skills">
+    <div class="card">
+      <h2>Skills</h2>
+      <div class="skills-list">
+        <span class="skill-tag">C</span>
+        <span class="skill-tag">HTML</span>
+        <span class="skill-tag">CSS</span>
+        <span class="skill-tag">JavaScript</span>
+        <span class="skill-tag">Three.js</span>
+      </div>
+    </div>
+  </section>
+
   <div class="hint">Move the mouse · Scroll down</div>
 
   <script type="importmap">
@@ -129,13 +163,30 @@
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(window.innerWidth, window.innerHeight);
 
-    // Main object: a shiny torus knot
-    const knot = new THREE.Mesh(
-      new THREE.TorusKnotGeometry(8, 2.5, 160, 24),
-      new THREE.MeshStandardMaterial({ color: 0x7c3aed, metalness: 0.5, roughness: 0.25 })
+    // Replace the purple torus knot with a glowing wireframe sphere that pulses over time.
+    const wireSphere = new THREE.Group();
+    const sphereCore = new THREE.Mesh(
+      new THREE.SphereGeometry(7.5, 32, 32),
+      new THREE.MeshBasicMaterial({
+        color: 0x8b5cf6,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.95
+      })
     );
-    knot.position.x = 12;
-    scene.add(knot);
+    const sphereGlow = new THREE.Mesh(
+      new THREE.SphereGeometry(9.5, 32, 32),
+      new THREE.MeshBasicMaterial({
+        color: 0x7dd3fc,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.18,
+        side: THREE.DoubleSide
+      })
+    );
+    wireSphere.add(sphereCore, sphereGlow);
+    wireSphere.position.x = 12;
+    scene.add(wireSphere);
 
     // Lights
     const ambient = new THREE.AmbientLight(0xffffff, 0.4);
@@ -161,7 +212,7 @@
 
     // Floating cubes made with a loop
     const cubes = [];
-    const cubeColors = [0x22d3ee, 0xf472b6, 0xfacc15, 0x34d399];
+    const cubeColors = [0x22d3ee, 0xf472b6, 0xfacc15, 0x34d399, 0xa78bfa, 0xfb7185];
     for (let i = 0; i < 12; i++) {
       const cube = new THREE.Mesh(
         new THREE.BoxGeometry(1.5, 1.5, 1.5),
@@ -176,7 +227,17 @@
       cubes.push(cube);
     }
 
-    // Mouse movement tilts the knot
+    // Clicking anywhere cycles the cube colours for a quick interactive effect.
+    let cubeColorIndex = 0;
+    document.addEventListener("click", () => {
+      cubeColorIndex = (cubeColorIndex + 1) % cubeColors.length;
+      const nextColor = cubeColors[cubeColorIndex];
+      cubes.forEach((cube) => {
+        cube.material.color.setHex(nextColor);
+      });
+    });
+
+    // Mouse movement tilts the main object
     const mouse = { x: 0, y: 0 };
     window.addEventListener("mousemove", (event) => {
       mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -194,8 +255,10 @@
     function animate() {
       const time = clock.getElapsedTime();
 
-      knot.rotation.x = time * 0.3 + mouse.y * 0.5;
-      knot.rotation.y = time * 0.4 + mouse.x * 0.5;
+      wireSphere.rotation.x = time * 0.25 + mouse.y * 0.5;
+      wireSphere.rotation.y = time * 0.35 + mouse.x * 0.5;
+      const pulse = 1 + Math.sin(time * 1.5) * 0.15;
+      wireSphere.scale.setScalar(pulse);
 
       cubes.forEach((cube, i) => {
         cube.rotation.x += 0.01;
